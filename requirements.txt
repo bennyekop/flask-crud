@@ -1,0 +1,3 @@
+Flask==2.3.3 # Pinning version for stability 
+Flask-MySQLdb==1.0.1 # Pinning version for stability
+python-dotenv==1.0.0 # Pinning version for stability

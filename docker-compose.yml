@@ -1,0 +1,111 @@
+version: '3.8'
+
+
+services:
+
+  # Flask Application Service
+
+  flask_app:
+
+    build: . # Build the Docker image using the Dockerfile in the current directory
+
+    container_name: flask_crud_app_container
+
+    ports:
+
+      - "5000:5000" # Map host port 5000 to container port 5000
+
+    environment:
+
+      # Pass environment variables directly to the container for Flask
+
+      - SECRET_KEY=${SECRET_KEY}
+
+      - MYSQL_HOST=mysql_db # Service name of the MySQL container
+
+      - MYSQL_USER=${MYSQL_USER}
+
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+
+      - MYSQL_DB=${MYSQL_DB}
+
+    depends_on:
+
+      - mysql_db # Ensures mysql_db container starts before flask_app
+
+    volumes:
+
+      - .:/app # Mount the current host directory to /app in the container
+
+                # This allows for live code changes during development without rebuilding the image
+
+    env_file:
+
+      - ./.env # Load environment variables from the host's .env file
+
+
+  # MySQL Database Service
+
+  mysql_db:
+
+    image: mysql:8.0 # Use MySQL 8.0 image
+
+    container_name: mysql_crud_db_container
+
+    environment:
+
+      # These variables are used by the MySQL image to set up the database and user
+
+      MYSQL_ROOT_PASSWORD: myrootpassword # Set a strong root password for MySQL
+
+      MYSQL_DATABASE: ${MYSQL_DB} # Use the database name from .env
+
+      MYSQL_USER: ${MYSQL_USER} # Use the user from .env
+
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD} # Use the password from .env
+
+    ports:
+
+      - "3306:3306" # Expose MySQL port (optional, useful for connecting directly from host)
+
+    volumes:
+
+      - mysql_data:/var/lib/mysql # Persistent data storage for MySQL
+
+      - ./db:/docker-entrypoint-initdb.d # Mount init.sql for database setup on first run
+
+    command: --default-authentication-plugin=mysql_native_password # Ensures compatibility with older clients like phpMyAdmin
+
+
+  # phpMyAdmin Service
+
+  phpmyadmin:
+
+    image: phpmyadmin/phpmyadmin:latest # Use the latest phpMyAdmin image
+
+    container_name: phpmyadmin_crud_container
+
+    links:
+
+      - mysql_db:db # Link to the MySQL service, aliasing it as 'db' inside phpMyAdmin
+
+    ports:
+
+      - "8082:80" # ***CHANGED: Mapped host port 8082 to container port 80***
+
+    environment:
+
+      PMA_HOST: mysql_db # Hostname for phpMyAdmin to connect to (the MySQL service name)
+
+      PMA_PORT: 3306 # Port for MySQL
+
+      MYSQL_ROOT_PASSWORD: myrootpassword # Use the same root password as MySQL for phpMyAdmin login
+
+    depends_on:
+
+      - mysql_db # Ensures mysql_db starts before phpMyAdmin
+
+
+volumes:
+
+  mysql_data: # Define the named volume for persistent MySQL data
